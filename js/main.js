@@ -1,5 +1,13 @@
 import {run} from '@cycle/core';
 import {makeDOMDriver} from '@cycle/dom';
-import App from './components/App';
+import {makeHTTPDriver} from '@cycle/http';
+import {makeInputClearDriver} from './drivers/input';
+import App from './components/MyApp';
 
-run(App, {DOM: makeDOMDriver('#root')});
+run(App, 
+	{
+		DOM: makeDOMDriver('#root'),
+		HTTP: makeHTTPDriver(),
+		CLEAR: makeInputClearDriver(['.field'])
+	}
+);

@@ -32,6 +32,7 @@
   "dependencies": {
     "@cycle/core": "^6.0.0",
     "@cycle/dom": "^8.0.0",
+    "@cycle/http": "^8.0.0",
     "rx": "^4.0.7"
   }
 }
