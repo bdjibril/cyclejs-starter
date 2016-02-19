@@ -9,6 +9,17 @@ function MyApp(sources) {
   const isValidIp = ip => ip.length >= 3;
   const isValidUsername = username => username.length >= 3;
   const isValidPassword = password => password.length >= 3;
+
+  // retrieve the form values as an object
+  const getFormValues = () =>{
+    return {
+      serverName: document.querySelector('#serverName').value,
+      ipAddress: document.querySelector('#ipAddress').value,
+      username: document.querySelector('#username').value,
+      password: document.querySelector('#password').value
+    };
+  };
+  
   
   // Render the devices rows
   const renderDevices = (devices) => {
@@ -17,7 +28,8 @@ function MyApp(sources) {
             td(device.ipAddress),
             td(device.username),
             td(device.password),
-            td(device.status)
+            td(device.status),
+            td([button(`#delete-${device.id} .server-delete .button-outline .button-red .button-small`, 'Delete')])
           ])
         );
   };
@@ -31,7 +43,8 @@ function MyApp(sources) {
             th('IP Address'),
             th('Username'),
             th('Password'),
-            th('Status')
+            th('Status'),
+            th('')
           ])
         ]),
         tbody('.table-body', renderDevices(devices)
@@ -57,12 +70,35 @@ function MyApp(sources) {
       ]);
   
   const DEVICES_URL = 'https://demo9712149.mockable.io/servers';
+
+
+  const submitFormClick_ = sources.DOM
+    .select('.submit').events('click');
+  
+  const devices_ = sources.HTTP
+    .filter(res_ => res_.request.url.indexOf(DEVICES_URL) === 0 && res_.request.method === 'GET' )
+    .mergeAll()
+    .map(res => res.body)
+    .startWith([]);
+  
+  const devicesFormResponse_ = sources.HTTP
+    .filter(res_ => res_.request.url.indexOf(DEVICES_URL) === 0 && res_.request.method === 'POST')
+    .mergeAll()
+    .map(res => res.body)
+    .startWith(null);
+
+  const deviceDeleteResponse_ = sources.HTTP
+    .filter(res_ => res_.request.url.indexOf(DEVICES_URL) === 0 && res_.request.method === 'DELETE')
+    .mergeAll()
+    .map(res => res.body)
+    .startWith(null);
   
   const initialDevicesFetch_ = Rx.Observable.just(null);
   const fetchDevicesClick_ = sources.DOM
-    .select('.fetch-devices').events('click');
+    .select('.fetch-devices').events('click')
+    .throttle(5000);
   
-  const getDevices_ = Rx.Observable.merge(initialDevicesFetch_, fetchDevicesClick_)
+  const getDevices_ = Rx.Observable.merge(initialDevicesFetch_, fetchDevicesClick_, deviceDeleteResponse_, devicesFormResponse_)
     .map(() => {
       return {
         url: DEVICES_URL,
@@ -70,7 +106,7 @@ function MyApp(sources) {
       };
     });
   
-  const serverName_ = sources.DOM.select('#ipAddress').events('keyup').debounce(250).map(e => e.target.value).merge(sources.CLEAR);
+  const serverName_ = sources.DOM.select('#serverName').events('keyup').debounce(250).map(e => e.target.value).merge(sources.CLEAR);
   const ipAddress_ = sources.DOM.select('#ipAddress').events('keyup').debounce(250).map(e => e.target.value).merge(sources.CLEAR);
   const username_ = sources.DOM.select('#username').events('keyup').debounce(250).map(e => e.target.value).merge(sources.CLEAR);
   const password_ = sources.DOM.select('#password').events('keyup').debounce(250).map(e => e.target.value).merge(sources.CLEAR);
@@ -90,7 +126,7 @@ function MyApp(sources) {
            isValidIp(formValues.ipAddress) &&
            isValidUsername(formValues.username) && 
            isValidPassword(formValues.password);
-  });
+  }).distinctUntilChanged();
   
   const submit_ = sources.DOM.select('.submit').events('click');
   const submitClicked_ = submit_.map(() => false);
@@ -98,12 +134,30 @@ function MyApp(sources) {
   
   const submitEnabled_ = isFormValid_.merge(submitClicked_).startWith(false);
   
-  const devices_ = sources.HTTP
-    .filter(res_ => res_.request.url.indexOf(DEVICES_URL) === 0)
-    .mergeAll()
-    .map(res => res.body)
-    .startWith([]);
- 
+  const sendForm_ = submit_.map(getFormValues);
+  
+  const addDevice_ = sendForm_
+    .map((deviceData) => {
+      return {
+        url: DEVICES_URL,
+        method: 'POST',
+        send: deviceData
+      };
+    });
+
+  const deleteDeviceBtnClick_ = sources.DOM.select('.server-delete').events('click').map(e => e.target.id);
+
+  const deleteDevice_ = deleteDeviceBtnClick_
+    .map(id => {
+      id = 1;
+      return {
+        url: `${DEVICES_URL}/${id}`,
+        method: 'DELETE'
+      };
+    });
+
+  // Merge all the requests to send
+  const httpRequest_ = getDevices_.merge(addDevice_).merge(deleteDevice_);
   
   const vtree_ = Rx.Observable.combineLatest(devices_, formValues_, submitEnabled_, (devices, formValues, submitEnabled) =>
     div('.container', [
@@ -116,8 +170,8 @@ function MyApp(sources) {
 
   return {
     DOM: vtree_,
-    HTTP: getDevices_,
-    CLEAR: submit_
+    HTTP: httpRequest_,
+    CLEAR: devicesFormResponse_
   };
 }
 

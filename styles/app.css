@@ -1,16 +1,36 @@
 html, body {
   height: 100%;
+  padding: 15px;
+  background-color: #FAFAFA;
 }
+
 body {
   margin: 0;
-  /* font-family: 'Merriweather', Georgia, serif; */
   font-size: 12px;
 }
+
 #root {
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100%;
-  background-color: #FAFAFA; 
+  min-height: 100%; 
+}
+
+/* Applying size variation */
+.button-small {
+  font-size: .8rem;
+  height: 2.8rem;
+  line-height: 2.8rem;
+  padding: 0 1.5rem;
+}
+
+.button-red {
+  border-color: #D9534F;
+  color: #D9534F !important;
+  margin-bottom: 0px;
+}
+
+tbody > tr:hover {
+  background-color: #F2EFFB
 }
 
