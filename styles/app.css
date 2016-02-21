@@ -19,9 +19,9 @@ body {
 /* Applying size variation */
 .button-small {
   font-size: .8rem;
-  height: 2.8rem;
-  line-height: 2.8rem;
-  padding: 0 1.5rem;
+  height: 2.4rem;
+  line-height: 2.4rem;
+  padding: 0 1.0rem;
 }
 
 .button-red {

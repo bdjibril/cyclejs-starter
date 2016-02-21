@@ -1,37 +1,40 @@
 import {Observable} from 'rx';
-import {div, img} from '@cycle/dom';
-import AdjectiveInput from './AdjectiveInput';
-import Sentence from './Sentence';
+import {div, hr, makeDOMDriver} from '@cycle/dom';
+import MediaGrid from './MediaGrid';
+import MediaForm from './MediaForm';
 
+const App = (sources) => {
 
-function App(sources) {
+  // The Grid Component
+  const mediaGridComponent = MediaGrid({DOM: sources.DOM, HTTP: sources.HTTP});
+  const mediaGridComponentVTree_ = mediaGridComponent.DOM;
 
-  const adjectiveInputComponent = AdjectiveInput({DOM: sources.DOM});
-  const adjectiveInputVTree$ = adjectiveInputComponent.DOM;
-  const adjectiveInputValue$ = adjectiveInputComponent.inputValue$;
+  // The Form Component
+  const mediaFormComponent = MediaForm({DOM: sources.DOM, HTTP: sources.HTTP, CLEAR: sources.CLEAR});
+  const mediaFormComponentVTree_ = mediaFormComponent.DOM;
 
-  const sentenceSources = {DOM: sources.DOM, prop$: {adjectiveInputValue$}};
-  const sentenceComponent = Sentence(sentenceSources);
-  const sentenceVTree$ = sentenceComponent.DOM;
+  // Merge all the requests to send
+  const httpRequest_ = Observable.merge(mediaGridComponent.HTTP, mediaFormComponent.HTTP);
 
-  const vTree$ = Observable
-        .combineLatest(
-          adjectiveInputVTree$,
-          sentenceVTree$,
-          (inputVTree, sentenceVTree) =>
-            div({className: 'app'}, [
-              img({src: '/images/cyclejs_logo.svg', width: 200}),
-              sentenceVTree,
-              inputVTree
-            ])
-        );
+  // Form clear
+  const clear_ = mediaFormComponent.CLEAR;
+  
+  // Build the vtree from all the components
+  const vtree_ = Observable.combineLatest(mediaGridComponentVTree_, mediaFormComponentVTree_, (mediaGridComponentVTree, mediaFormComponentVTree) =>
+    div('.container', [
+      mediaGridComponentVTree,
+      hr(),
+      mediaFormComponentVTree
+    ])
+  );
 
   const sinks = {
-    DOM: vTree$
+    DOM: vtree_,
+    HTTP: httpRequest_,
+    CLEAR: clear_
   };
 
   return sinks;
 }
-
 
 export default App;
